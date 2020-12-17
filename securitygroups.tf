@@ -1,3 +1,4 @@
+// Create Security Group for EC2 instance
 //resource "aws_security_group" "kateri-ec2-sg" {
 //  name = "kateri-ec2-sg"
 //  description = "SG for the ec2 instance"
@@ -22,6 +23,7 @@
 //  }
 //}
 //
+// Create Security Group for ELB
 //resource "aws_security_group" "kateri-elb-sg" {
 //  name = "kateri-elb-sg"
 //  description = "SG for the ELB"

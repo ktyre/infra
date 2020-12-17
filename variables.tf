@@ -11,3 +11,4 @@ variable "vpc_cidr" {
 }
 
 variable "private_subnet_1_cidr" {}
+variable "public_subnet_1_cidr" {}
