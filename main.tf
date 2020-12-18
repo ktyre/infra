@@ -11,14 +11,12 @@ resource "aws_vpc" "kateri-vpc" {
 
 // Create Internet Gateway and attach to VPC
 resource "aws_internet_gateway" "kateri-internet-gateway-for-vpc" {
-  provider   = aws.region
   vpc_id     = aws_vpc.kateri-vpc.id
   depends_on = [aws_vpc.kateri-vpc]
 }
 
 // Get all Availability Zones in the current VPC "kateri-vpc"
 data "aws_availability_zones" "availability-zones" {
-  provider = aws.region
   state    = "available"
 }
 
@@ -36,7 +34,6 @@ resource "aws_nat_gateway" "nat-gateway-for-public-subnet" {
 
 // Create Private Subnet for EC2 Instance
 resource "aws_subnet" "private-subnet-1" {
-  provider          = aws.region
   availability_zone = element(data.aws_availability_zones.availability-zones.names, 0)
   vpc_id            = aws_vpc.kateri-vpc.id
   cidr_block        = var.private_subnet_1_cidr
@@ -48,7 +45,6 @@ resource "aws_subnet" "private-subnet-1" {
 
 // Create Public Subnet for VPC
 resource "aws_subnet" "public-subnet-1" {
-  provider          = aws.region
   availability_zone = element(data.aws_availability_zones.availability-zones.names, 0)
   vpc_id            = aws_vpc.kateri-vpc.id
   cidr_block        = var.public_subnet_1_cidr
