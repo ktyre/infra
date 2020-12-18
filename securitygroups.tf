@@ -5,9 +5,9 @@
 //  vpc_id = data.terraform_remote_state.infrastructure.outputs.vpc_id
 //
 //  ingress {
-//    from_port = 80
-//    protocol = "http"
-//    to_port = 80
+//    from_port = 22
+//    protocol = "tcp"
+//    to_port = 22
 //    cidr_blocks = []
 //  }
 //

@@ -1,0 +1,9 @@
+.DS_Store
+.idea/.gitignore
+.idea/infra.iml
+.idea/misc.xml
+.idea/modules.xml
+.idea/vcs.xml
+.terraform/plugins/darwin_amd64/lock.json
+.terraform/terraform.tfstate
+.terraform/plugins/darwin_amd64/terraform-provider-aws_v3.21.0_x5

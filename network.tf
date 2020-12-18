@@ -20,7 +20,7 @@ data "terraform_remote_state" "infrastructure" {
 
 // Create VPC
 resource "aws_vpc" "kateri-vpc" {
-  provider = aws.region
+  provider   = aws.region
   cidr_block = var.vpc_cidr
 
   tags = {
@@ -28,15 +28,29 @@ resource "aws_vpc" "kateri-vpc" {
   }
 }
 
-// Create Internet Gateway
+// Create Internet Gateway and attach to VPC
 resource "aws_internet_gateway" "kateri-internet-gateway-for-vpc" {
-  provider = aws.region
-  vpc_id   = aws_vpc.kateri-vpc.id
+  provider   = aws.region
+  vpc_id     = aws_vpc.kateri-vpc.id
+  depends_on = [aws_vpc.kateri-vpc]
 }
 
 // Get all Availability Zones in the current VPC "kateri-vpc"
 data "aws_availability_zones" "availability-zones" {
+  provider = aws.region
   state    = "available"
+}
+
+// Create Elastic IP for NAT
+resource "aws_eip" "eip-for-nat" {
+  vpc        = true
+  depends_on = [aws_internet_gateway.kateri-internet-gateway-for-vpc]
+}
+
+// Create NAT Gateway to attach to public subnet
+resource "aws_nat_gateway" "nat-gateway-for-public-subnet" {
+  allocation_id = aws_eip.eip-for-nat.id
+  subnet_id     = aws_subnet.public-subnet-1.id
 }
 
 // Create Private Subnet for EC2 Instance
@@ -63,6 +77,40 @@ resource "aws_subnet" "public-subnet-1" {
   }
 }
 
+// Create a Route Table for the NAT Gateway --> I DO NOT UNDERSTAND THIS PART
+resource "aws_route_table" "route-table-for-NAT" {
+  vpc_id     = aws_vpc.kateri-vpc.id
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_nat_gateway.nat-gateway-for-public-subnet.id
+  }
+  depends_on = [aws_nat_gateway.nat-gateway-for-public-subnet]
+}
+
+// Create a Route Table for the Public Subnet --> I DO NOT UNDERSTAND THIS PART
+resource "aws_route_table" "route-table-for-public-subnet" {
+  vpc_id     = aws_vpc.kateri-vpc.id
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.kateri-internet-gateway-for-vpc.id
+  }
+  depends_on = [aws_nat_gateway.nat-gateway-for-public-subnet]
+}
+
+// Create Route Table Association for Public Subnet
+resource "aws_route_table_association" "route-table-ass-public" {
+  subnet_id = aws_subnet.public-subnet-1.id
+  route_table_id = aws_route_table.route-table-for-public-subnet.id
+  depends_on = [aws_subnet.public-subnet-1, aws_route_table.route-table-for-public-subnet]
+}
+
+// Create Route Table Associate for Private Subnet
+resource "aws_route_table_association" "route-table-ass-private" {
+  subnet_id = aws_subnet.private-subnet-1.id
+  route_table_id = aws_route_table.route-table-for-NAT.id
+  depends_on = [aws_subnet.private-subnet-1, aws_route_table.route-table-for-NAT]
+}
+
 // Create EC2 Instance w/ private subnet
 resource "aws_instance" "kateri_ec2_instance" {
   ami = "ami-0a741b782c2c8632d" //Ubuntu 18
@@ -72,11 +120,10 @@ resource "aws_instance" "kateri_ec2_instance" {
   //security_groups = [aws_security_group.kateri-ec2-sg.id]
 }
 
-// Create ELB
+// Create ELB  --> REALLY STRUGGLING WITH LISTENER STUFF
 resource "aws_elb" "kateri-elb" {
   name = "kateri-sucks-at-this-elb"
-  subnets = [aws_subnet.private-subnet-1.id]
-  internal = true
+  subnets = [aws_subnet.public-subnet-1.id]
   //security_groups = [aws_security_group.kateri-elb-sg.id]
 
   listener {
